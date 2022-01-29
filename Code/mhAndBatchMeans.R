@@ -16,7 +16,7 @@ for(t in 2:T){
 		x[t] = y
 		acc = acc + 1
 	} else{
-		x[t-1] = y
+		x[t] = x[t-1]
 	}
 }
 
@@ -40,7 +40,7 @@ N = a*b
 
 mu = mean(x)
 mu
-Y = numeric(length = b) 
+Y = numeric(length = a) 
 
 for(i in 0:(a-1)){
     Y[i+1] = mean(x[(b*i+1):(b*(i+1))])
@@ -48,3 +48,6 @@ for(i in 0:(a-1)){
 
 var = (b/(a-1))*(sum((Y-mu)**2))
 var
+
+
+plot(1:100)

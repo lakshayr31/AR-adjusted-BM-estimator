@@ -1,5 +1,8 @@
+library("languageserver")
+library("httpgd")
+
 #simulating the metropolis hasting's algorithm for 
-# target distribution cauchy - C(s,t) where s - scale paramter and t - location parameter
+# target distribution cauchy - C(s,t) where s - scale paramter and t - location parameter 
 # proposal distribution normal - N(x,h) where x is the sample taken and h is the step size, or the amount of variability needed in the proposal 
 
 cauchy <- function(x,t,s) {
@@ -64,7 +67,7 @@ for(t in 2:T){
 		x[t] = y
 		acc = acc + 1
 	} else{
-		x[t-1] = y
+		x[t] = x[t-1]
 	}
 }
 
@@ -74,5 +77,8 @@ x_test = rexp(T,rate)
 plot(density(x_test))
 plot(density(x))
 
+
 acf(x, main = "ACF Plot")
 plot.ts(x, main = "Trace Plot")
+
+

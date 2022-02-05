@@ -38,11 +38,13 @@ target <- laplace
 proposal <- normal
 
 # setting up for running multiple mcmc
-iter <- 100
+iter <- 400
+
+b_dist <- c(50,100,200,500);
 
 #for the sigma of each run
-sigma_dist = numeric(length = iter)
-bm_sigma_dist = numeric(length = iter)
+est_sigma_dist <- matrix(0, nrow = length(b_dist), ncol = iter/length(b_dist))
+bm_sigma_dist <- matrix(0, nrow = length(b_dist), ncol = iter/length(b_dist))
 #for the sample mean of each run
 sample_mean_dist = numeric(length = iter)
 
@@ -50,12 +52,14 @@ acc_dist = numeric(length = iter)
 # running mulitple mcmc
 # setting up changing parameters
 
-b_dist <- c(50,100,200,400);
-
-b_sigma <- matrix(0, nrow = length(b_dist), ncol = iter/length(b_dist))
 T <- 1e4
 
-h <- 8
+Y_1 = numeric(length = T/b_dist[1])
+Y_2 = numeric(length = T/b_dist[2])
+Y_3 = numeric(length = T/b_dist[3])
+Y_4 = numeric(length = T/b_dist[4])
+
+h <- 10
 
 ini <- 2
 it <- 1
@@ -70,9 +74,9 @@ while(it <= iter){
     for(t in 2:T){
         y = proposal(1,x[t-1],h)
         # sample space restrictions
-        while(y < 0){ 
-            y = proposal(1,x[t-1],h)
-        }
+        # while(y < 0){ 
+        #     y = proposal(1,x[t-1],h)
+        # }
         alpha = min((target(y,theta,s)/target(x[t-1],theta,s)),1)
         u = runif(1,0,1)
         if(u <= alpha){
@@ -91,59 +95,57 @@ while(it <= iter){
     a <- n/b
     mu = mean(x)
     Y = numeric(a)
-
     for(i in 0:(a-1)){
         Y[i+1] = mean(x[((b*i)+1):(b*(i+1))])
     }
-    bm_sigma_dist[it] = (b/(a-1))*(sum((Y-mu)^2))
+    if(b == b_dist[1]){
+        Y_1 = Y
+    }
+    else if (b == b_dist[2]){
+        Y_2 = Y
+    }
+    else if (b == b_dist[3]){
+        Y_3 = Y
+    }
+    else {
+        Y_4 = Y
+    }
+    bm_sigma= (b/(a-1))*(sum((Y-mu)^2))
 
     model = ar(Y, aic = FALSE,order.max = 1)
-    if(model$order == 0){
-        print("Got a model with order 0")
-        break
-    }
+
     rho <- model$ar
     alpha_sq <- model$var.pred
-    sigma_dist[it] <- (b*alpha_sq)/((1-rho^2))
-    b_sigma[if (it%%length(b_dist) == 0) length(b_dist) else it%%length(b_dist), if(floor(it/length(b_dist)) == 25) 25 else floor(it/length(b_dist)) + 1] = (b*alpha_sq)/((1-rho^2))
+
+    est_sigma <- (b*alpha_sq)/((1-rho^2))
+    bm_sigma_dist[if (it%%length(b_dist) == 0) length(b_dist) else it%%length(b_dist), if(floor(it/length(b_dist)) == iter/length(b_dist)) iter/length(b_dist) else floor((it-1)/length(b_dist)) + 1] = bm_sigma
+    est_sigma_dist[if (it%%length(b_dist) == 0) length(b_dist) else it%%length(b_dist), if(floor(it/length(b_dist)) == iter/length(b_dist)) iter/length(b_dist) else floor((it-1)/length(b_dist)) + 1] = est_sigma
+    # print(paste("Row, Column Value", if (it%%length(b_dist) == 0) length(b_dist) else it%%length(b_dist), " ", if(floor(it/length(b_dist)) == iter/length(b_dist)) iter/length(b_dist) else floor((it-1)/length(b_dist)) + 1 , " ", b_dist[if (it%%length(b_dist) == 0) length(b_dist) else it%%length(b_dist)]))
     it <- it + 1
 }
-
+plot(density(x))
+mean(x)
 mean(acc_dist)
 
 var(sample_mean_dist)
 var(sample_mean_dist)*T
 
-mean(sigma_dist)
-mean(bm_sigma_dist)
-var(sigma_dist)
-var(bm_sigma_dist)
+cbind(apply(bm_sigma_dist,1,mean),apply(est_sigma_dist,1,mean))
+cbind(apply(bm_sigma_dist,1,var),apply(est_sigma_dist,1,var))
+par(mfrow=c(1,1))
+acf(x,lag.max = 100)
 
+par(mfrow=c(2,2))    
 
-plot(density(sigma_dist), main = "Density Plot")
-lines(density(bm_sigma_dist),col = "red")
-abline(v=mean(sigma_dist), col="black")
-abline(v=mean(bm_sigma_dist), col="red")
-abline(v=var(sample_mean_dist)*T, col = "blue")
-legend("topright", legend=c("Variance Estimated", "Batch Means Variance"),
-       col=c("black", "red"), lty=1:1, cex=0.8)
-legend("right", legend=c("mean(sigma_dist)","mean(bm_sigma_dist)","var(sample_mean_dist)*T"),col=c("black","red","blue"), lty=1:1:1, cex=0.8)
-
-col = c("red","blue","green","black")
-plot(density(b_sigma[1,]), lwd = 1, col = col[1])
-for(x in 2:4) {
-    lines(density(b_sigma[x,]), lwd = x, col = col[x])
+for(i in 1:4) {
+    plot(density(est_sigma_dist[i,]),xlim=c(0,600), main = paste("Batch Size : ",b_dist[i]), lwd = 2, col = "red")
+    lines(density(bm_sigma_dist[i,]), lwd = 2, col = "blue")
+    legend("topright", legend=c("Estimated ","BM "), col=c("red","blue"), lty=1:1, cex=0.8)
 }
+par(mfrow=c(2,2))
+acf(Y_1,lag.max = 100,main=paste("Batch Size ",b_dist[1]))
+acf(Y_2,lag.max = 100,main=paste("Batch Size ",b_dist[2]))
+acf(Y_3,lag.max = 100,main=paste("Batch Size ",b_dist[3]))
+acf(Y_4,lag.max = 100,main=paste("Batch Size ",b_dist[4]))
 
-legend("topright", legend=c("B = 50", "B = 100", "B = 200", "B = 400"),
-       col=col, lty=1:1:1:1, cex=0.8)
-for(x in 1:4) {
-    abline(v=mean(b_sigma[x,]), col=col[x])
-}
 
-for(x in 1:4) {
-    cat(b_dist[x], " ", mean(b_sigma[x,])," \n")
-}
-for(x in 1:4) {
-    cat(b_dist[x], " ", var(b_sigma[x,])," \n")
-}

@@ -7,7 +7,7 @@ rate = 2
 exponential <- function(x,rate){
     return(dexp(x,rate))
 }
-# gamma
+# gamma 
 shape = 9
 rate = 0.5
 gamma <- function(x,shape,rate){

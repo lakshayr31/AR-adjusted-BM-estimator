@@ -131,7 +131,7 @@ var(sample_mean_dist)
 var(sample_mean_dist)*T
 
 cbind(apply(bm_sigma_dist,1,mean),apply(est_sigma_dist,1,mean))
-cbind(apply(bm_sigma_dist,1,var),apply(est_sigma_dist,1,var))
+cbind(apply(bm_sigma_dist,1,var),apply(est_sigma_dist,1,var)) 
 par(mfrow=c(1,1))
 acf(x,lag.max = 100)
 

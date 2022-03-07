@@ -89,7 +89,8 @@ for(it in 1:iter){
 cbind(apply(bm_sigma_dist,1,mean),apply(est_sigma_dist,1,mean),apply(est_sigma_dist_aic,1,mean))
 cbind(apply(bm_sigma_dist,1,var),apply(est_sigma_dist,1,var),apply(est_sigma_dist_aic,1,var)) 
 
-par(mfrow=c(2,2))    
+# par(mfrow=c(2,2))  
+par(mfrow=c(1,2))  
 
 for(i in 1:length(b_dist)) {
     plot(density(bm_sigma_dist[i,]), xlim = c(min(bm_sigma_dist[i,],est_sigma_dist[i,],est_sigma_dist_aic[i,]) - 10, max(bm_sigma_dist[i,],est_sigma_dist[i,],est_sigma_dist_aic[i,]) + 10), main = paste("Batch Size : ",b_dist[i]), lwd = 1, col = "red")

@@ -14,7 +14,7 @@ gamma <- function(x,shape,rate){
     return(dgamma(x,shape = shape, rate = rate))
 }
 # laplace
-theta = 0
+theta = 2
 s = 4    
 laplace <- function(x,theta,s){
     return(0.5*(1/s)*exp(-abs(x-theta)/s))
@@ -38,13 +38,13 @@ normal <- function(x,mu,h){
 }
 
 #setting up parameters for distributions
-target <- exponential
+target <- laplace
 proposal <- normal
 
 # Samples 
 T <- 1e5
 # Step size
-h <- 1
+h <- 2
 # Starting value
 acc <- 0 
 x <- numeric(T)
@@ -52,10 +52,10 @@ x[1] <- 2
 
 for(t in 2:T){
     y = rnorm(1,x[t-1],h)
-    while(y <= 0){
-        y = rnorm(1,x[t-1],h)
-    }
-    alpha = min((target(y,rate)/target(x[t-1],rate)),1)
+    # while(y <= 0){
+    #     y = rnorm(1,x[t-1],h)
+    # }
+    alpha = min((target(y,theta,s)/target(x[t-1],theta,s)),1)
     u = runif(1,0,1)
     if(u <= alpha){
         x[t] = y
@@ -65,7 +65,7 @@ for(t in 2:T){
     }
 }
 accP = (acc/T)*100
-print(paste0("Accuracy ",accP))
+print(paste0("Acceptance ",accP))
 
 # Analysis of Samples
 # sample_mean <- mean(x)
@@ -78,7 +78,7 @@ print(paste0("Accuracy ",accP))
 #        col=c("black", "red"), lty=1:1, cex=0.8)
 # Batch Means 
 n <- T
-b <- 100
+b <- 50
 a <- n/b
 mu = mean(x)
 Y = numeric(length = a)
@@ -89,6 +89,8 @@ for(i in 0:(a-1)){
 # plot(density(Y))
 # mean(Y)
 # var(Y)
+acf(Y)
+
 #Analysis of Batch Means
 bm_sample_var <- (b/(a-1))*(sum((Y-mu)^2))
 bm_sample_var
@@ -103,13 +105,14 @@ alpha_sq <- model$var.pred
 alpha_sq
 acf(Y,main = "Batch Means Correlation")
 # estimator estimate of variance
-estimated_sample_var = (b*alpha_sq)/((1-rho^2))
+estimated_sample_var = (b*alpha_sq)/(1-rho)^2
+estimated_sample_var
 
-h
-accP
 bm_sample_var
 estimated_sample_var
 rho
 # Printing Values Properly
-cat(" Sample Variance : ", sample_var, "\n", "Batch Means Sample Variance ", bm_sample_var, "\n", "Estimator Variance ", estimated_sample_var, "\n")
+# cat(" Sample Variance : ", sample_var, "\n", "Batch Means Sample Variance ", bm_sample_var, "\n", "Estimator Variance ", estimated_sample_var, "\n")
+
+
 

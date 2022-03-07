@@ -25,10 +25,10 @@ T <- 1e5
 b_dist[2] <- floor(T^(1/2))
 b_dist[1] <- floor(T^(1/3))
 
-rho <- 0.95
+phi <- 0.99
 alpha <- 1
 
-sigma_true = (alpha^2)/(1-rho^2)
+sigma_true = (alpha^2)/((1-phi)^2)
 
 # This is to the code for which model has to be made for an AR1 process
 for(it in 1:iter){
@@ -38,7 +38,7 @@ for(it in 1:iter){
     x[1] <- rnorm(1,0,1)
 
     for(i in 2:T){
-        x[i] <- x[i-1]*rho + rnorm(1,0,alpha)
+        x[i] <- x[i-1]*phi + rnorm(1,0,alpha)
     }
 
     n <- T
@@ -98,20 +98,43 @@ for(i in 1:length(b_dist)){
     print(paste("Batch Size ",b_dist[i]," MSE BM: ",mse_bm," MSE EST: ",mse_est,"MSE AIC EST: ", mse_est_aic));
 }
 
-par(mfrow=c(1,2))    
+
+pdf(file = paste("/mnt/d/2022_Jan-Apr/Semester 8/Mth UGP/Latec Images/Week 8/",phi,"_AR.pdf",sep=""), height = 8, width = 10, pointsize = 10)
+par(mfrow=c(2,1))    
 
 for(i in 1:length(b_dist)) {
-    plot(density(bm_sigma_dist[i,]), xlim = c(min(bm_sigma_dist[i,],est_sigma_dist[i,],est_sigma_dist_aic[i,]) - 10, max(bm_sigma_dist[i,],est_sigma_dist[i,],est_sigma_dist_aic[i,]) + 10), main = paste("Batch Size : ",b_dist[i]), lwd = 1, col = "red")
-    abline(v = 400)
+    min_lim = min(bm_sigma_dist[i,],est_sigma_dist[i,],est_sigma_dist_aic[i,])
+    max_lim = max(bm_sigma_dist[i,],est_sigma_dist[i,],est_sigma_dist_aic[i,])
+    range = max_lim - min_lim
+    plot(density(bm_sigma_dist[i,]), xlim = c(min_lim - 0.4*(range), max_lim + 0.4*(range)), main = paste("Batch Size : ",b_dist[i]), lwd = 1, col = "red")
+    abline(v = sigma_true)
     lines(density(est_sigma_dist[i,]), lwd = 1, col = "blue")
     lines(density(est_sigma_dist_aic[i,]), lwd = 1, col ="green")
     legend("topright", legend=c("BM ","Estimated ", "Estimated AIC "), col=c("red","blue", "green"), lty=1:1:1, cex=0.8)
 }
 
+dev.off()
+
+pdf(file = paste("/mnt/d/2022_Jan-Apr/Semester 8/Mth UGP/Latec Images/Week 8/",rho,"_RHO.pdf",sep=""), height = 8, width = 10, pointsize = 10)
+par(mfrow=c(2,1))    
+
 for(i in 1:length(b_dist)) {
     plot(density(rho_dist[i,]), col = "red", main = paste("Rho ", mean(rho_dist[i,]),"BS : ", b_dist[i]))
+    abline(v = mean(rho_dist[i,]))
 }
 
+dev.off()
+
+
+pdf(file = paste("/mnt/d/2022_Jan-Apr/Semester 8/Mth UGP/Latec Images/Week 8/",rho,"_RHO_AIC.pdf",sep=""), height = 8, width = 10, pointsize = 10)
+par(mfrow=c(2,1))    
+
+for(i in 1:length(b_dist)) {
+    plot(density(rho_dist_aic[i,]), col = "red", main = paste("Rho ", mean(rho_dist_aic[i,]),"BS : ", b_dist[i]))
+    abline(v = mean(rho_dist_aic[i,]))
+}
+
+dev.off()
+
+
 par(mfrow=c(1,1))
-
-

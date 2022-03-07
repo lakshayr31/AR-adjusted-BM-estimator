@@ -121,7 +121,7 @@ while(it <= iter){
     sample_var_dist[if (it%%length(b_dist) == 0) length(b_dist) else it%%length(b_dist), if(floor(it/length(b_dist)) == iter/length(b_dist)) iter/length(b_dist) else floor((it-1)/length(b_dist)) + 1] = var(x)
     # print(paste("Row, Column Value", if (it%%length(b_dist) == 0) length(b_dist) else it%%length(b_dist), " ", if(floor(it/length(b_dist)) == iter/length(b_dist)) iter/length(b_dist) else floor((it-1)/length(b_dist)) + 1 , " ", b_dist[if (it%%length(b_dist) == 0) length(b_dist) else it%%length(b_dist)]))
     it <- it + 1
-}
+}   
 
 for(i in 1:length(b_dist)){
     mse_bm = (1/n)*sum((sample_var_dist[i,]-bm_sigma_dist[i,])^2);

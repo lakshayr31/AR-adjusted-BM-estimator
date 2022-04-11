@@ -4,10 +4,14 @@ library("fastmatrix")
 library("matrixcalc")
 
 alpha <- 0.3
+p <- 3
 W <- diag(alpha,p)
 
-for(i in 1:3){
-    for(x in 1:p){
+phi <- matrix(0, nrow = p, ncol = p)
+for(i in 1:3)
+{
+    for(x in 1:p)
+    {
         sum = 1
         for(y in 1:p){
             curr = runif(1,0,sum)
@@ -49,7 +53,7 @@ for(i in 1:3){
     temp_sum <- matrix(0,p,p)
 
     for(i in 1:a){
-        temp_sum <- (Y[,i] - theta_hat) %*% t(Y[,i] - theta_hat)
+        temp_sum <- temp_sum + (Y[,i] - theta_hat) %*% t(Y[,i] - theta_hat)
     }
 
     bm_cov_matrix <- (b/(a-1))*(temp_sum)
@@ -64,7 +68,7 @@ for(i in 1:3){
 
     W_est <- summary(model)$covres
 
-    coeff <- summary(model)$corres
+    coeff <- Acoef(model)[[1]]
 
     phi_est <- coeff
 
@@ -74,7 +78,7 @@ for(i in 1:3){
 
     one_mat <- diag(1,p)
 
-    est_sigma <- solve(one_mat-phi_est)%*%V_est_mat + V_est_mat %*% solve(one_mat-t(phi_est)) - V_est_mat
+    est_sigma <- b*solve(one_mat-phi_est)%*%V_est_mat + V_est_mat %*% solve(one_mat-t(phi_est)) - V_est_mat
 
     error <- frobenius.norm(est_sigma-act_sigma)/frobenius.norm(act_sigma)
 

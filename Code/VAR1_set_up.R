@@ -2,11 +2,12 @@ library("mvtnorm")
 library("vars")
 library("fastmatrix")
 library("matrixcalc")
+
 #### setting some things upfront
 p <- 3
 val <- 0.7
 T <- 1e4
-alpha <- 0.5
+alpha <- 0.3
 
 phi <- diag(val,p)
 W <- diag(alpha,p)
@@ -30,7 +31,8 @@ for(i in 2:T){
 V <- solve(diag(p^2) - kronecker.prod(phi,phi)) %*% c(diag(alpha,p))
 V_mat <- matrix(V,p,p)
 
-one_mat <- matrix(1,p,p)
+
+one_mat <- diag(1,p)
 act_sigma <- solve(one_mat-phi)%*%V_mat + V_mat%*%solve(one_mat-t(phi)) - V_mat
 
 #### Implementing batch means
@@ -54,23 +56,29 @@ for(i in 1:a){
 bm_cov_matrix <- (b/(a-1))*(temp_sum)
 
 #### Implementing VAR(1) 
+
 data <- t(Y)
 
 model <- VAR(y = data, p = 1,lag.max = NULL)
 
-W_est <- cov(residuals(model))
+str(summary(model))
 
+summary(model)$corres
 
-coeff <- Acoef(model)
-coeff_with_error <- Bcoef(model)
+# W_est <- cov(residuals(model))
 
-phi_est <- coeff[[1]]
+W_est <- summary(model)$covres
+
+coeff <- summary(model)$corres
+
+phi_est <- coeff
 
 V_est <- solve(diag(p^2) - kronecker.prod(phi_est,phi_est)) %*% c(W_est)
 
 V_est_mat <- matrix(V_est,p,p)
 
-one_mat <- matrix(1,p,p)
+one_mat <- diag(1,p)
+
 est_sigma <- solve(one_mat-phi_est)%*%V_est_mat + V_est_mat %*% solve(one_mat-t(phi_est)) - V_est_mat
 
 error <- frobenius.norm(est_sigma-act_sigma)/frobenius.norm(act_sigma)

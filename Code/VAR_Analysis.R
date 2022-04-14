@@ -2,24 +2,57 @@ library("mvtnorm")
 library("vars")
 library("fastmatrix")
 library("matrixcalc")
+library("pracma")
 
-alpha <- 0.3
-p <- 3
+#### setting some things upfront
+
+p <- 5
+T <- 1e4
+alpha <- 0.4
+
 W <- diag(alpha,p)
 
-phi <- matrix(0, nrow = p, ncol = p)
-for(i in 1:3)
-{
-    for(x in 1:p)
-    {
-        sum = 1
-        for(y in 1:p){
-            curr = runif(1,0,sum)
-            phi[x,y] = curr
-            sum = sum - curr
-        }
+#### First I need to generate a series of samples from a VAR (1)
+
+#### Generating a phi
+
+u <- pracma(p, "orthonormal")
+sigma <- diag(p)
+
+for(i in 1:p){
+    if(i < p/2){
+        sigma[i,i] <- runif(1,0,0.5)
     }
-    X0 <- numeric(p)
+    else {
+        sigma[i,i] <- runif(1,0.5,1)
+    }
+}
+
+u <- randortho(p, "orthonormal")
+phi <- u %*% sigma %*% t(u)
+eigen(phi)$values
+# for(x in 1:p)
+# {
+#     sum = 1
+#     for(y in 1:p){
+#         curr = runif(1,0,sum)
+#         phi[x,y] = curr
+#         sum = sum - curr
+#     }
+# }
+
+iter <- 100
+
+det_sigma_bm <- numeric(iter)
+det_sigma_est <- numeric(iter)
+det_sigma_act <- numeric(iter)
+error_bm <- numeric(iter)
+error_est <- numeric(iter)
+
+for(x in 1:iter){
+    print(paste0("Iter : ", x))
+
+    X0 <- rnorm(p)
 
     X <- matrix(0, nrow = p, ncol = T)
 
@@ -36,10 +69,8 @@ for(i in 1:3)
     one_mat <- diag(1,p)
     act_sigma <- solve(one_mat-phi)%*%V_mat + V_mat%*%solve(one_mat-t(phi)) - V_mat    
 
-    print(paste0("Iteration No ", i))
     ## Batch Means
 
-    
     b <- floor(T^(1/2))
     a <- floor(T/b)
     Y <- matrix(0,nrow = p, ncol = a)
@@ -57,9 +88,11 @@ for(i in 1:3)
     }
 
     bm_cov_matrix <- (b/(a-1))*(temp_sum)
-    
+
     bm_error <- frobenius.norm(bm_cov_matrix-act_sigma)/frobenius.norm(act_sigma)
-    
+
+    error_bm[x] <- bm_error
+
     print(paste0("Batch Means Error ",bm_error))
 
     data <- t(Y)
@@ -79,12 +112,27 @@ for(i in 1:3)
     one_mat <- diag(1,p)
 
     est_sigma <- b*solve(one_mat-phi_est)%*%V_est_mat + V_est_mat %*% solve(one_mat-t(phi_est)) - V_est_mat
+    act_sigma
+    error_est[x] <- frobenius.norm(est_sigma-act_sigma)/frobenius.norm(act_sigma)
 
-    error <- frobenius.norm(est_sigma-act_sigma)/frobenius.norm(act_sigma)
+    print(paste0("Estimated Error ",error_est[x]))
 
-    print(paste0("Estimated Error ",error))
-    
+    det_sigma_act[x] <- determinant(act_sigma, logarithm=TRUE)$modulus
+    det_sigma_bm[x] <- determinant(bm_cov_matrix, logarithm=TRUE)$modulus
+    det_sigma_est[x] <- determinant(est_sigma, logarithm=TRUE)$modulus
 }
+
+plot(density(det_sigma_est), lwd = 1, col ="green", main = "Determinants")
+# abline(v = sigma_true[x/2 + 1])
+lines(density(det_sigma_bm), lwd = 1, col = "blue")
+lines(density(det_sigma_act), lwd = 1, col = "red")
+
+legend("topright", legend=c("ACT ","BM ", "EST "), col=c("red","blue", "green"), lty=1:1:1, cex=0.8)
+
+plot(density(error_bm), main = "Error", lwd = 1, col = "red")
+lines(density(error_est), lwd = 1, col = "blue")
+
+legend("topright", legend=c("BM ","EST"), col=c("red","blue"), lty=1:1, cex=0.8)
 
 # A lot of questions in this code 
 # 1 Does the Phi matrix need to be similar to a covaraince matrix?

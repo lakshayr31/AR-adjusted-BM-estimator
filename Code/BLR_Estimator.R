@@ -41,19 +41,30 @@ X <- as.matrix(titanic[, -1])
 
 ## acceptance is too low! we want 23%
 ## so decrease proposal variance
-chain <- bayes_logit_mh(y = y, X = X, N = 1e3, prop.sd = .35) 
+chain <- bayes_logit_mh(y = y, X = X, N = 1e4, prop.sd = .005) 
 
+# par(mfrow=c(3,2))
+# plot.ts(chain[,1])
+# plot.ts(chain[,2])
+# plot.ts(chain[,3])
+# plot.ts(chain[,4])
+# plot.ts(chain[,5])
+# plot.ts(chain[,6])
 
 b_dist <- numeric(2);
-iter <- 100
-n_sd = 3
-#for plotting everything on the same graph
-bm_sigma_dist_phi <- matrix(0, nrow = n_sd*length(b_dist), ncol = iter)
-est_sigma_dist_phi <- matrix(0, nrow = n_sd*length(b_dist), ncol = iter)
-est_sigma_dist_aic_phi <- matrix(0, nrow = n_sd*length(b_dist), ncol = iter)
 
-rho_dist_phi <- matrix(0, nrow = n_sd*length(b_dist), ncol = iter)
-rho_dist_aic_phi <- matrix(0, nrow = n_sd*length(b_dist), ncol = iter)
+# n_sd = 3
+n_T = 3
+
+iter <- 100
+
+#for plotting everything on the same graph
+bm_sigma_dist_phi <- matrix(0, nrow = n_T*length(b_dist), ncol = iter)
+est_sigma_dist_phi <- matrix(0, nrow = n_T*length(b_dist), ncol = iter)
+est_sigma_dist_aic_phi <- matrix(0, nrow = n_T*length(b_dist), ncol = iter)
+
+rho_dist_phi <- matrix(0, nrow = n_T*length(b_dist), ncol = iter)
+rho_dist_aic_phi <- matrix(0, nrow = n_T*length(b_dist), ncol = iter)
 
 
 sample_mean_dist <- numeric(length = iter)
@@ -69,21 +80,25 @@ alpha_dist_aic <- matrix(0,nrow = length(b_dist), ncol = iter)
 
 
 T <- 1e4
-b_dist[2] <- floor(T^(1/2))
-b_dist[1] <- b_dist[2]/2
-
-sd_dist = c(0.0060, 0.0045, 0.0030)
+T_dist = c(1e3,1e4,1e5)
+# b_dist[2] <- floor(T^(1/2))
+# b_dist[1] <- floor(T)
+sd = 0.005
+# sd_dist = c(0.0060, 0.0045, 0.0030)
 # This is to the code for which model has to be made for an AR1 process
-for(sd in 1:length(sd_dist)){
+y <- titanic[,1]
+X <- as.matrix(titanic[, -1])
+
+for(T in T_dist){
+    print(paste("For Sample Size : ",T))
+    b_dist[2] <- floor(T^(1/2))
+    b_dist[1] <- floor(T^(1/3))
+    
     for(it in 1:iter){
         print(paste("Iter : ", it))
 
-        y <- titanic[,1]
-        X <- as.matrix(titanic[, -1])
-
-        ## acceptance is too low! we want 23%
-        ## so decrease proposal variance
-        x <- bayes_logit_mh(y = y, X = X, N = T, prop.sd = sd_dist[sd]) 
+        x <- bayes_logit_mh(y = y, X = X, N = T, prop.sd = sd) 
+        
         x <- x[,6]
 
         n <- T
@@ -132,82 +147,107 @@ for(sd in 1:length(sd_dist)){
             est_sigma_dist_aic[which(b == b_dist), it] <- est_sigma_aic
         }
     }
-    for(i in 1:length(b_dist)){
-        bm_sigma_dist_phi[(sd- 1)*length(b_dist) + i , ] <- bm_sigma_dist[i,]
-        est_sigma_dist_phi[(sd- 1)*length(b_dist) + i, ] <- est_sigma_dist[i,]
-        est_sigma_dist_aic_phi[(sd- 1)*length(b_dist) + i,]  <- est_sigma_dist_aic[i,]
 
-        rho_dist_phi[(sd- 1)*length(b_dist) + i, ] <- rho_dist[i,]
-        rho_dist_aic_phi[(sd- 1)*length(b_dist) + i, ] <- rho_dist_aic[i,]
+    for(i in 1:length(b_dist)){
+        bm_sigma_dist_phi[(which(T_dist == T)- 1)*length(b_dist) + i , ] <- bm_sigma_dist[i,]
+        est_sigma_dist_phi[(which(T_dist == T)- 1)*length(b_dist) + i, ] <- est_sigma_dist[i,]
+        est_sigma_dist_aic_phi[(which(T_dist == T)- 1)*length(b_dist) + i,]  <- est_sigma_dist_aic[i,]
+
+        rho_dist_phi[(which(T_dist == T)- 1)*length(b_dist) + i, ] <- rho_dist[i,]
+        rho_dist_aic_phi[(which(T_dist == T)- 1)*length(b_dist) + i, ] <- rho_dist_aic[i,]
     }
 }
  
 iter <- 100
 
-for (sd in 1:length(sd_dist)){
+for (T in 1:length(T_dist)){
     for(i in 1:length(b_dist)){
-        
-        y <- titanic[,1]
-        X <- as.matrix(titanic[, -1])
 
         ## acceptance is too low! we want 23%
         ## so decrease proposal variance
-        var_x <- numeric(iter) 
-        for(it in 1:iter){
-            print(paste("Iter : ", it))
+        # var_x <- numeric(iter) 
+        # for(it in 1:iter){
+        #     print(paste("Iter : ", it))
 
-            x <- bayes_logit_mh(y = y, X = X, N = 1e4, prop.sd = sd_dist[sd]) 
-            x <- x[,6]
-            sigma_true <- var(x)
-            var_x[it] <- sigma_true
-        }
-        sigma_true <- var(var_x)
+        #     x <- bayes_logit_mh(y = y, X = X, N = 1e4, prop.sd = sd_dist[sd]) 
+        #     x <- x[,6]
+        #     sigma_true <- var(x)
+        #     var_x[it] <- sigma_true
+        # }
+        # sigma_true <- var(var_x)
 
-        bm_sigma_dist[i,] <- bm_sigma_dist_phi[(sd- 1)*length(b_dist) + i , ] 
-        est_sigma_dist[i,] <- est_sigma_dist_phi[(sd- 1)*length(b_dist) + i, ] 
-        est_sigma_dist_aic[i,] <- est_sigma_dist_aic_phi[(sd- 1)*length(b_dist) + i,]  
+        bm_sigma_dist[i,] <- bm_sigma_dist_phi[(T- 1)*length(b_dist) + i , ] 
+        est_sigma_dist[i,] <- est_sigma_dist_phi[(T- 1)*length(b_dist) + i, ] 
+        est_sigma_dist_aic[i,] <- est_sigma_dist_aic_phi[(T- 1)*length(b_dist) + i,]  
 
-        rho_dist[i,] <- rho_dist_phi[(sd- 1)*length(b_dist) + i, ] 
-        rho_dist_aic[i,] <- rho_dist_aic_phi[(sd- 1)*length(b_dist) + i, ] 
-        cbind(apply(bm_sigma_dist,1,mean),apply(est_sigma_dist,1,mean),apply(est_sigma_dist_aic,1,mean))
-        cbind(apply(bm_sigma_dist,1,var),apply(est_sigma_dist,1,var),apply(est_sigma_dist_aic,1,var)) 
+        rho_dist[i,] <- rho_dist_phi[(T- 1)*length(b_dist) + i, ] 
+        rho_dist_aic[i,] <- rho_dist_aic_phi[(T- 1)*length(b_dist) + i, ] 
+        
+        # cbind(apply(bm_sigma_dist,1,mean),apply(est_sigma_dist,1,mean),apply(est_sigma_dist_aic,1,mean))
+        # cbind(apply(bm_sigma_dist,1,var),apply(est_sigma_dist,1,var),apply(est_sigma_dist_aic,1,var)) 
 
         mean_var = cbind(apply(bm_sigma_dist,1,mean),apply(est_sigma_dist,1,mean),apply(est_sigma_dist_aic,1,mean))
         var_var = cbind(apply(bm_sigma_dist,1,var),apply(est_sigma_dist,1,var),apply(est_sigma_dist_aic,1,var)) 
 
-        mse_var <- matrix(0, nrow = length(b_dist), ncol = 3)
+        # mse_var <- matrix(0, nrow = length(b_dist), ncol = 3)
     }
-    for(i in 1:length(b_dist)){
-            mse_bm = (1/n)*sum((sigma_true-bm_sigma_dist[i,])^2);
-            mse_est = (1/n)*sum((sigma_true-est_sigma_dist[i,])^2);
-            mse_est_aic = (1/n)*sum((sigma_true-est_sigma_dist_aic[i,])^2);
-            # mse_var[i,] = formatC(c(mse_bm, mse_est, mse_est_aic), format="e", digits = 4)
-            mse_var[i,] = c(mse_bm, mse_est, mse_est_aic);
-            print(paste("Batch Size ",b_dist[i]," MSE BM: ",mse_bm," MSE EST: ",mse_est,"MSE AIC EST: ", mse_est_aic));
-        }
 
-    data <- data.frame("mean"=mean_var, "var"=var_var, "mse"=mse_var)
+    # for(i in 1:length(b_dist)){
+    #         mse_bm = (1/n)*sum((sigma_true-bm_sigma_dist[i,])^2);
+    #         mse_est = (1/n)*sum((sigma_true-est_sigma_dist[i,])^2);
+    #         mse_est_aic = (1/n)*sum((sigma_true-est_sigma_dist_aic[i,])^2);
+    #         # mse_var[i,] = formatC(c(mse_bm, mse_est, mse_est_aic), format="e", digits = 4)
+    #         mse_var[i,] = c(mse_bm, mse_est, mse_est_aic);
+    #         print(paste("Batch Size ",b_dist[i]," MSE BM: ",mse_bm," MSE EST: ",mse_est,"MSE AIC EST: ", mse_est_aic));
+    #     }
+
+    # data <- data.frame("mean"=mean_var, "var"=var_var, "mse"=mse_var)
+
+    data <- data.frame("mean"=mean_var, "var"=var_var)
+    
     rownames(data) = c(b_dist[1],b_dist[2])
-    write.csv(data, file = paste("/mnt/d/2022_Jan-Apr/Semester 8/Mth UGP/Code/StatisticCSVFIle/sd_",sd_dist[sd]))
+    
+    write.csv(data, file = paste("/mnt/d/2022_Jan-Apr/Semester 8/Mth UGP/Code/StatisticCSVFIle/T_",T_dist[T],".csv"))
 }
  
 
-pdf(file = paste("/mnt/d/2022_Jan-Apr/Semester 8/Mth UGP/Code/Report_Images/SD_AR_BLR.pdf",sep=""), height = 10, width = 8, pointsize = 10)
+pdf(file = paste("/mnt/d/2022_Jan-Apr/Semester 8/Mth UGP/Code/Report_Images/T_SD_BLR.pdf",sep=""), height = 10, width = 8, pointsize = 10)
 
 
-par(mfrow=c(4,2))   
+par(mfrow=c(3,2))   
 
+#choosing the scale of the graph 
+min_lim_glo = 0
+max_lim_glo = 0
 
 for(x in seq.int(0,5,2)){
+    T <- T_dist[x/2 + 1]
+    b_dist[2] <- floor(T^(1/2))
+    b_dist[1] <- floor(T^(1/3))
+    min_lim_glo = min(min_lim_glo, min(bm_sigma_dist_phi[x+i,],est_sigma_dist_phi[x+i,],est_sigma_dist_aic_phi[x+i,]))
+    max_lim_glo = max(max_lim_glo, max(bm_sigma_dist_phi[x+i,],est_sigma_dist_phi[x+i,],est_sigma_dist_aic_phi[x+i,]))
+}
+
+max_lim_glo = 0.003
+
+for(x in seq.int(0,5,2)){
+
+    T <- T_dist[x/2 + 1]
+    b_dist[2] <- floor(T^(1/2))
+    b_dist[1] <- floor(T^(1/3))
+
     for(i in 1:length(b_dist)) {
+
+
         bm_sigma_dist[i,] = bm_sigma_dist_phi[x+i,];
         est_sigma_dist[i,] = est_sigma_dist_phi[x+i,];
         est_sigma_dist_aic[i,] = est_sigma_dist_aic_phi[x+i,];
         min_lim = min(bm_sigma_dist[i,],est_sigma_dist[i,],est_sigma_dist_aic[i,])
         max_lim = max(bm_sigma_dist[i,],est_sigma_dist[i,],est_sigma_dist_aic[i,])
         range = max_lim - min_lim
-        plot(density(bm_sigma_dist[i,]), xlim = c(min_lim - 0.5*(range), max_lim + 0.5*(range)), main = paste("SD : ", sd_dist[x/2 + 1],"Batch Size : ",b_dist[i]), lwd = 1, col = "red")
-        abline(v = sigma_true[x/2 + 1])
+        # plot(density(bm_sigma_dist[i,]), xlim = c(min_lim - 0.5*(range), max_lim + 0.5*(range)), main = paste("T : ", T_dist[x/2 + 1],"Batch Size : ",b_dist[i]), lwd = 1, col = "red")
+        plot(density(bm_sigma_dist[i,]), xlim = c(min_lim_glo, max_lim_glo), main = paste("T : ", T_dist[x/2 + 1],"Batch Size : ",b_dist[i]), lwd = 1, col = "red")
+        # abline(v = sigma_true[x/2 + 1])
         lines(density(est_sigma_dist[i,]), lwd = 1, col = "blue")
         lines(density(est_sigma_dist_aic[i,]), lwd = 1, col ="green")
         legend("topright", legend=c("BM ","Estimated ", "Estimated AIC "), col=c("red","blue", "green"), lty=1:1:1, cex=0.8)
@@ -216,18 +256,19 @@ for(x in seq.int(0,5,2)){
 
 dev.off()
 
-pdf(file = paste("/mnt/d/2022_Jan-Apr/Semester 8/Mth UGP/Code/Report_Images/Rho_BLR.pdf",sep=""), height = 10, width = 8, pointsize = 10)
+pdf(file = paste("/mnt/d/2022_Jan-Apr/Semester 8/Mth UGP/Code/Report_Images/RHO_T_BLR.pdf",sep=""), height = 10, width = 8, pointsize = 10)
 
-par(mfrow=c(4,2))    
+par(mfrow=c(3,2))    
+
 for( x in seq.int(0,5,2)){
     for(i in 1:length(b_dist)){
         rho_dist[i, ] = rho_dist_phi[x+i, ]
         rho_dist_aic[i, ] = rho_dist_aic_phi[x+i, ]
         min_x = min(min(density(rho_dist[i, ])$x), max(density(rho_dist_aic[i, ])$x))
         max_x = max(max(density(rho_dist[i, ])$x), max(density(rho_dist_aic[i, ])$x))
-        plot(density(rho_dist_aic[i,]), col = "blue")
-        # plot(density(rho_dist_aic[i,]), ylim = c(0,max(max(density(rho_dist[i, ])$y), max(density(rho_dist_aic[i, ])$y))), xlim = c(min_x, max_x),  col = "blue", main = paste("BS : ", b_dist[i])) # "Rho ", mean(rho_dist[i,]) ,"AIC Rho ", mean(rho_dist_aic[i,])
-        # lines(density(rho_dist[i,]), lwd = 1, col = "red")
+        # plot(density(rho_dist_aic[i,]), col = "blue")
+        plot(density(rho_dist_aic[i,]), ylim = c(0,max(max(density(rho_dist[i, ])$y), max(density(rho_dist_aic[i, ])$y))), xlim = c(min_x, max_x),  col = "blue", main = paste("BS : ", b_dist[i])) # "Rho ", mean(rho_dist[i,]) ,"AIC Rho ", mean(rho_dist_aic[i,])
+        lines(density(rho_dist[i,]), lwd = 1, col = "red")
         legend("topright", legend=c("AIC = FALSE ","AIC = TRUE"), col=c("red","blue"), lty=1:1, cex=0.8)
     }
 }
@@ -235,15 +276,15 @@ for( x in seq.int(0,5,2)){
 dev.off()
 
 
-pdf(file = paste("/mnt/d/2022_Jan-Apr/Semester 8/Mth UGP/Latec Images/Week 8/RHO_AIC.pdf",sep=""), height = 8, width = 10, pointsize = 10)
-par(mfrow=c(2,1))    
+# pdf(file = paste("/mnt/d/2022_Jan-Apr/Semester 8/Mth UGP/Latec Images/Week 8/RHO_AIC.pdf",sep=""), height = 8, width = 10, pointsize = 10)
+# par(mfrow=c(2,1))    
 
-for(i in 1:length(b_dist)) {
-    plot(density(rho_dist_aic[i,]), col = "red", main = paste("Rho ", mean(rho_dist_aic[i,]),"BS : ", b_dist[i]))
-    abline(v = mean(rho_dist_aic[i,]))
-}
+# for(i in 1:length(b_dist)) {
+#     plot(density(rho_dist_aic[i,]), col = "red", main = paste("Rho ", mean(rho_dist_aic[i,]),"BS : ", b_dist[i]))
+#     abline(v = mean(rho_dist_aic[i,]))
+# }
 
-dev.off()
+# dev.off()
 
 
 par(mfrow=c(1,1))

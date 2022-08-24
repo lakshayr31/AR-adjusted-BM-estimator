@@ -34,7 +34,7 @@ bayes_logit_mh <- function(y, X, N = 1e4, prop.sd = .35)
   return(beta.mat)
 }
 
-# titanic <- read.csv("https://dvats.github.io/assets/titanic.csv")
+titanic <- read.csv("https://dvats.github.io/assets/titanic.csv")
 
 y <- titanic[,1]
 X <- as.matrix(titanic[, -1])
